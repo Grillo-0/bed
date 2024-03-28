@@ -8,6 +8,7 @@ struct bed_file {
 	char *name;
 	size_t size;
 	size_t offset;
+	size_t mmap_offset;
 };
 
 #endif // __INTERNAL_DONT_DEFINE_THIS

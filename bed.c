@@ -81,20 +81,22 @@ int main(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-	// char* prg_name = *argv;
 	argv++;
 	argc--;
 
 	size_t total_size = 0;
+	size_t virtual_total_size = 0;
 	for (int i = 0; i < argc; i++) {
 		struct bed_file f = {
 			.name = argv[i],
 			.size = get_file_size(argv[i]),
-			.offset = i == 0 ? 0 : total_size,
+			.offset = i == 0 ? 0 : virtual_total_size,
+			.mmap_offset = i == 0 ? 0 : total_size,
 		};
 
 		size_t pg_size = getpagesize();
 		total_size += (f.size + pg_size) / pg_size * pg_size;
+		virtual_total_size += f.size;
 
 		da_append(&metadata, f);
 	}
@@ -112,7 +114,7 @@ int main(int argc, char *argv[]) {
 		assert(fd != -1);
 
 		void* pa;
-		pa = mmap(storage + f->offset, f->size, PROT_READ, MAP_PRIVATE | MAP_FIXED, fd, 0);
+		pa = mmap(storage + f->mmap_offset, f->size, PROT_READ, MAP_PRIVATE | MAP_FIXED, fd, 0);
 		if (pa == MAP_FAILED) {
 			perror("mmap");
 			assert(0);
@@ -131,15 +133,18 @@ int main(int argc, char *argv[]) {
 	}
 	write_to_c("};", "\n");
 
-	write_to_c("unsigned char resource[] = {", "\n\t");
-	for (size_t i = 0; i < total_size; i++) {
-		printf("0x%02x,", storage[i]);
-		if ((i + 1) % COLUMNS == 0) {
-			write_to_c("","\n");
-			if(i < total_size - 1) printf("\t");
-		}
-		else {
-			printf(" ");
+	write_to_c("static unsigned char resource[] = {", "\n\t");
+	for (size_t i = 0; i < metadata.len; i++) {
+		struct bed_file *f = &metadata.items[i];
+		for (size_t j = 0; j < f->size; j++) {
+			printf("0x%02x,", storage[j + f->mmap_offset]);
+			if ((j + f->offset + 1) % COLUMNS == 0) {
+				write_to_c("","\n");
+				if(j + f->offset < virtual_total_size) printf("\t");
+			}
+			else {
+				printf(" ");
+			}
 		}
 	}
 
