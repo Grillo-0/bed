@@ -10,15 +10,47 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
 
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "bed.h"
+#define STRUCT_BED_FILE_DEFINE \
+struct bed_file { \
+	char *name; \
+	size_t size; \
+	size_t offset; \
+	size_t mmap_offset; \
+};
+
+#define FUNC_BED_GET_DEFINE \
+void bed_get(char* file_name, unsigned char** blob, size_t *size) { \
+	struct bed_file *f; \
+	bool found = false; \
+	for (int i = 0; i < NUM_FILES; i++) { \
+		if(!strcmp(metadata[i].name, file_name)) { \
+			found = true; \
+			f = &metadata[i]; \
+			break; \
+		} \
+	} \
+ \
+	if (found) { \
+		*blob = &resource[f->offset]; \
+		*size = f->size; \
+	} else { \
+		*blob = NULL; \
+		*size = 0; \
+	} \
+}
 
 #define COLUMNS 12
+
+#define __STRINGFY(x) #x
+#define STRINGFY(x) __STRINGFY(x)
 
 #define DA_EXPAND_FACTOR 2
 
@@ -71,6 +103,7 @@ static void __write_to_c(char *file_path, int line_num, const char *fmt, const c
 	printf("\t// %s:%d%s", file_path, line_num, end);
 }
 
+STRUCT_BED_FILE_DEFINE
 static DA_DEFINE(struct bed_file) metadata;
 static unsigned char *storage;
 
@@ -124,8 +157,10 @@ int main(int argc, char *argv[]) {
 		assert(ret != -1);
 	}
 
-	write_to_c("#include \"bed.h\"", "\n");
-	write_to_c("struct bed_file metadata[] = {", "\n\t");
+	write_to_c("#include <stdbool.h>", "\n");
+	write_to_c("#include <string.h>", "\n");
+	write_to_c(STRINGFY(STRUCT_BED_FILE_DEFINE), "\n");
+	write_to_c("static struct bed_file metadata[] = {", "\n\t");
 	for (size_t i = 0; i < metadata.len; i++) {
 		struct bed_file *f = &metadata.items[i];
 		write_to_c("{.name = \"%s\", .size = %zu, .offset = %zu},", "\n", f->name, f->size, f->offset);
@@ -150,8 +185,7 @@ int main(int argc, char *argv[]) {
 
 	write_to_c("};", "\n");
 	write_to_c("#define NUM_FILES %d", "\n", metadata.len);
-	write_to_c("#define __INTERNAL_DONT_DEFINE_THIS", "\n");
-	write_to_c("#include \"bed.h\"", "\n");
+	write_to_c(STRINGFY(FUNC_BED_GET_DEFINE), "\n");
 
 	exit(EXIT_SUCCESS);
 }
