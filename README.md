@@ -18,7 +18,8 @@ $ ./bed <files>... > resource.c
 ```
 Next, you use the `bed_get()` function, `test.c` is a example on how to do it.
 
-You can optionally add an prefix to the function with '-p' flag.
+You can optionally add an prefix to the function with '-p' flag, test_prefix.c
+shows how to use this on code.
 
 ```console
 $ ./bed -p <prefix> <files>... > resource.c

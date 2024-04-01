@@ -1,3 +1,4 @@
 bed
-resource.c
-test
+resource*.c
+test*
+!test*.c
