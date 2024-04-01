@@ -1,8 +1,5 @@
 # bed
 
-> [!WARNING]
-> I wrote this in half a day, so expect bugs
-
 Embed files into your C applications
 
 This was inspired by one of the [Tsoding](https://github.com/tsoding)
