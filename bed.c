@@ -26,8 +26,8 @@ struct bed_file { \
 	size_t mmap_offset; \
 };
 
-#define FUNC_BED_GET_DEFINE \
-unsigned char* bed_get(char* file_name, size_t *size) { \
+#define FUNC_BED_GET_DEFINE(prefix) \
+unsigned char* prefix##bed_get(char* file_name, size_t *size) { \
 	struct bed_file *f; \
 	bool found = false; \
 	for (int i = 0; i < NUM_FILES; i++) { \
@@ -72,7 +72,7 @@ unsigned char* bed_get(char* file_name, size_t *size) { \
 } while (0)
 
 static void print_help(char *prg_name) {
-	printf("usage: %s <file>...\n", prg_name);
+	printf("usage: %s [-p <prefix>] <file>...\n", prg_name);
 	printf("Embed files into a C program by creating a .c file\n");
 }
 
@@ -106,6 +106,7 @@ static void __write_to_c(char *file_path, int line_num, const char *fmt, const c
 STRUCT_BED_FILE_DEFINE
 static DA_DEFINE(struct bed_file) metadata;
 static unsigned char *storage;
+static char *prefix = NULL;
 
 int main(int argc, char *argv[]) {
 	if (argc == 1) {
@@ -114,8 +115,24 @@ int main(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-	argv++;
-	argc--;
+	int c;
+	while(c = getopt(argc, argv, "p:"), c != -1) {
+		switch (c) {
+		case 'p':
+			prefix = optarg;
+			break;
+		case '?':
+			switch (optopt) {
+			case 'p':
+				fprintf(stderr, "%s: missing prefix\n", argv[0]);
+				print_help(argv[0]);
+				exit(EXIT_FAILURE);
+			}
+		}
+	}
+
+	argv += optind;
+	argc -= optind;
 
 	size_t total_size = 0;
 	size_t virtual_total_size = 0;
@@ -185,7 +202,11 @@ int main(int argc, char *argv[]) {
 
 	write_to_c("};", "\n");
 	write_to_c("#define NUM_FILES %d", "\n", metadata.len);
-	write_to_c(STRINGFY(FUNC_BED_GET_DEFINE), "\n");
+	if (prefix != NULL) {
+		write_to_c(STRINGFY(FUNC_BED_GET_DEFINE(%s_)), "\n", prefix);
+	} else {
+		write_to_c(STRINGFY(FUNC_BED_GET_DEFINE()), "\n");
+	}
 
 	exit(EXIT_SUCCESS);
 }
