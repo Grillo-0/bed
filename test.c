@@ -11,8 +11,7 @@
 #include "bed.h"
 
 int main(void) {
-	unsigned char *blob;
 	size_t size;
-	bed_get("test.c", &blob, &size);
+	unsigned char *blob = bed_get("test.c", &size);
 	printf("%.*s", (int)size, (char*)blob);
 }

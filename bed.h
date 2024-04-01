@@ -2,6 +2,6 @@
 
 #include <stddef.h>
 
-void bed_get(char *file_name, unsigned char **blob, size_t *size);
+unsigned char* bed_get(char *file_name, size_t *size);
 
 #endif // __BED_H__

@@ -27,7 +27,7 @@ struct bed_file { \
 };
 
 #define FUNC_BED_GET_DEFINE \
-void bed_get(char* file_name, unsigned char** blob, size_t *size) { \
+unsigned char* bed_get(char* file_name, size_t *size) { \
 	struct bed_file *f; \
 	bool found = false; \
 	for (int i = 0; i < NUM_FILES; i++) { \
@@ -39,11 +39,11 @@ void bed_get(char* file_name, unsigned char** blob, size_t *size) { \
 	} \
  \
 	if (found) { \
-		*blob = &resource[f->offset]; \
 		*size = f->size; \
+		return &resource[f->offset]; \
 	} else { \
-		*blob = NULL; \
 		*size = 0; \
+		return NULL; \
 	} \
 }
 
